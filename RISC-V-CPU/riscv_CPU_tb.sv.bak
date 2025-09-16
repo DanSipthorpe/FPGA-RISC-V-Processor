@@ -1,0 +1,84 @@
+`timescale 1ns/1ps
+
+module riscv_CPU_tb;
+
+    // Parameters
+    localparam ADDR_WIDTH = 12;
+
+    // Signals
+    logic clk;
+    logic rst;
+
+    // DUT
+    riscv_CPU #(.ADDR_WIDTH(ADDR_WIDTH)) dut (
+        .clk(clk),
+        .rst(rst)
+    );
+
+    // ======================
+    // Clock Generation
+    // ======================
+    initial begin
+        clk = 0;
+        forever #5 clk = ~clk;  // 100 MHz clock
+    end
+
+    // ======================
+    // Reset Sequence
+    // ======================
+    initial begin
+        rst = 1;
+        #20;
+        rst = 0;
+    end
+
+    // ======================
+    // Instruction Memory Preload
+    // ======================
+    // Program: Fibonacci sequence in RISC-V
+    // x1 = 0, x2 = 1
+    // loop: x3 = x1 + x2
+    //       store x3 into memory
+    //       x1 = x2
+    //       x2 = x3
+    //       repeat...
+    //
+    // NOTE: These are machine-code encodings for RV32I
+
+    initial begin
+        // Clear instruction memory
+        for (int i = 0; i < (1 << ADDR_WIDTH); i++) begin
+            dut.imem.Ram[i] = 32'h00000013; // NOP = ADDI x0,x0,0
+        end
+
+        // Program encoding (hand-written RISC-V instructions)
+        dut.imem.Ram[0] = 32'h00000093; // li x1,0   (ADDI x1,x0,0)
+        dut.imem.Ram[1] = 32'h00100113; // li x2,1   (ADDI x2,x0,1)
+
+        // loop:
+        dut.imem.Ram[2] = 32'h002081B3; // add x3,x1,x2
+        dut.imem.Ram[3] = 32'h00302023; // sw  x3,0(x0)   (store result at mem[0])
+        dut.imem.Ram[4] = 32'h00209093; // mv  x1,x2  (ADDI x1,x2,0)
+        dut.imem.Ram[5] = 32'h00310113; // mv  x2,x3  (ADDI x2,x3,0)
+        dut.imem.Ram[6] = 32'hFFCFF06F; // jal x0,loop (-4 instructions back)
+
+    end
+
+    // ======================
+    // Simulation Control
+    // ======================
+    initial begin
+        $dumpfile("riscv_cpu_tb.vcd");
+        $dumpvars(0, riscv_CPU_tb);
+
+        // Run for some cycles
+        #500;
+        $display("Fibonacci results in Data Memory:");
+        for (int i = 0; i < 10; i++) begin
+            $display("mem[%0d] = %0d", i, dut.dmem.Ram[i]);
+        end
+
+        $finish;
+    end
+
+endmodule
