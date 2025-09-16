@@ -1,0 +1,25 @@
+Module Data_Memory #(parameter ADDR_WIDTH =12)( 
+	input logic clk, 
+	input logic [31:0] Write_Data, 
+	input logic Write_Enable, 
+	input logic [ADDR_WIDTH-1:0] addr, 
+	output logic [31:0] Read_Data
+	
+
+
+);
+	logic [31:0] Ram [0:(1<<ADDR_WIDTH)-1]; 
+	initial begin 
+		for (int i = 0; i<(1<<ADDR_WIDTH);i++)
+			Ram[i]=0; 
+	end 
+	always_ff@(posedge clk) begin 
+		if (Write_Enable) 
+			Ram[addr] <= Write_Data; 
+			Read_Data <= Ram[addr]; 
+	end 
+endmodule
+
+
+
+		
