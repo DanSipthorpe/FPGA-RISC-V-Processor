@@ -1,0 +1,94 @@
+module control(
+    input  logic [6:0] opcode,
+    input  logic [2:0] funct3,
+    input  logic [6:0] funct7,
+
+    output logic [3:0] alu_ctrl,
+    output logic       is_alu_src_imm,
+    output logic       is_mem_read,
+    output logic       is_mem_write,
+    output logic       is_reg_write,
+    output logic       is_branch,
+    output logic       is_jal,
+    output logic       is_jalr,
+    output logic       is_lui,
+    output logic       is_auipc
+);
+    always_comb begin
+        // defaults
+        alu_ctrl       = 4'h0;
+        is_alu_src_imm = 0;
+        is_mem_read    = 0;
+        is_mem_write   = 0;
+        is_reg_write   = 0;
+        is_branch      = 0;
+        is_jal         = 0;
+        is_jalr        = 0;
+        is_lui         = 0;
+        is_auipc       = 0;
+
+        case (opcode)
+            7'b0110011: begin // R-type
+                is_reg_write = 1;
+                case ({funct7,funct3})
+                    {7'b0000000,3'b000}: alu_ctrl=4'h0; // add
+                    {7'b0100000,3'b000}: alu_ctrl=4'h1; // sub
+                    {7'b0000000,3'b111}: alu_ctrl=4'h2; // and
+                    {7'b0000000,3'b110}: alu_ctrl=4'h3; // or
+                    {7'b0000000,3'b100}: alu_ctrl=4'h4; // xor
+                    default: alu_ctrl=4'h0;
+                endcase
+            end
+
+            7'b0010011: begin // I-type ALU
+                is_reg_write = 1;
+                is_alu_src_imm = 1;
+                case (funct3)
+                    3'b000: alu_ctrl=4'h0; // addi
+                    3'b111: alu_ctrl=4'h2; // andi
+                    3'b110: alu_ctrl=4'h3; // ori
+                    default: alu_ctrl=4'h0;
+                endcase
+            end
+
+            7'b0000011: begin // lw
+                is_reg_write = 1;
+                is_mem_read = 1;
+                is_alu_src_imm = 1;
+                alu_ctrl = 4'h0;
+            end
+
+            7'b0100011: begin // sw
+                is_mem_write = 1;
+                is_alu_src_imm = 1;
+                alu_ctrl = 4'h0;
+            end
+
+            7'b1100011: begin // beq
+                is_branch = 1;
+                alu_ctrl = 4'h1; // sub
+            end
+
+            7'b1101111: begin // jal
+                is_jal = 1;
+                is_reg_write = 1;
+            end
+
+            7'b1100111: begin // jalr
+                is_jalr = 1;
+                is_reg_write = 1;
+                is_alu_src_imm = 1;
+            end
+
+            7'b0110111: begin // lui
+                is_lui = 1;
+                is_reg_write = 1;
+            end
+
+            7'b0010111: begin // auipc
+                is_auipc = 1;
+                is_reg_write = 1;
+            end
+        endcase
+    end
+endmodule
