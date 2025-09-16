@@ -3,17 +3,17 @@ SystemVerilog implementation of a RISC-V Soft CPU
 
 Includes modular implementation of all critical components, these include; 
 
-Data Memory (RAM) 
+- Data Memory (RAM) 
 
-Control Unit
+- Control Unit
 
-Program Counter
+- Program Counter
 
-Arithmetic Logic Unit 
+- Arithmetic Logic Unit 
 
-Instruction Memory 
+- Instruction Memory 
 
-Immediate Generator 
+- Immediate Generator 
 
-Register File 
+- Register File 
 
